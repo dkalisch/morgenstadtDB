@@ -1,0 +1,123 @@
+{% extends "formular_base_template.html" %}
+{% load custom_filters %}
+
+{% block title %}Soziomatrix{% endblock %}
+
+{% block navigation %}
+	<ul class="breadcrumb">
+		<li><a href ="{% url interview_add city_id=city.id interview_id=interview.id %}">Interview with: {{ interview.person }}</a><span class="divider">/</span></li>
+		<li><a href ="{% url interview_var city_id=city.id interview_id=interview.id %}">Variables</a><span class="divider">/</span></li>
+		<li class="active">Soziomatrix</li>
+	</ul>
+{% endblock %}
+
+{% block formular %}
+	<h1>Add new entry to soziomatrix</h1>
+	
+	<br />
+  	
+  	<form enctype="multipart/form-data" action="" method="post">{% csrf_token %} 
+   		{{ soziomatrixformset.management_form }}
+
+    	{% if soziomatrixformset.errors %}
+			<p class="text-error">Please correct the Errors below!</p>	
+		{% endif %}
+    	   
+   	    <div id="dontDisplay" style="display:none">
+    	   	{% for form in soziomatrixformset %}
+    	   		{{ form }}
+    	   	{% endfor %}
+   		</div>
+   		
+   	    <table class="table table-hover">
+   	    	<thead>
+                <tr>
+                  <th>Asked</th>
+                  <th>Rated</th>
+                  <th>Value</th>
+                  <th>Importance</th>
+                </tr>
+            </thead>
+            
+            <tbody class="extra_soziomatrixform">
+            	{% for form in soziomatrixformset %}
+            		{% for field in form.hidden_fields %}
+						{{ field }}
+					{% endfor %}
+            		<tr>
+            			<td>
+            				{{ interview.person }}
+            			</td>
+	            		{% for field in form.visible_fields %}
+	            			{% if field.errors %}
+								<td>
+									<div class="control-group error">
+										<div class="controls">
+												{{ field }}
+											<span class="help-inline">{{ field.errors.0 }}</span>
+										</div>
+									</div>
+								</td>
+							{% else %}
+		            			<td>
+									{{ field }}
+								</td>
+							{% endif %}
+				        {% endfor %}
+			        </tr>
+                {% endfor %}
+                
+            </tbody>
+			
+			<tbody class="empty_form" style="display:none">
+				<tr>
+					<td>
+						{{ interview.person }}
+					</td>
+					{% for f in soziomatrixformset.empty_form %}
+						<td>
+							{{ f }}
+						</td>
+					{% endfor %}
+				</tr>
+			</tbody>
+	    </table>
+
+		<input class="btn" type="button" id="add_more" value="Add Empty" />
+	
+		<script>
+			//adds new soziomatrix entries
+			$('#add_more').click(function() {
+				//get total number of forms
+				var form_idx = $('#id_soziomatrix-TOTAL_FORMS').val();
+				//get html from empty_form-div
+				var html =$('.empty_form').html().replace(/__prefix__/g, form_idx);
+				//append html to extra_form-div
+				$('.extra_soziomatrixform').append(html);
+				//increment total number of forms
+				$('#id_soziomatrix-TOTAL_FORMS').val(parseInt(form_idx) + 1);
+				//add the typeahead-source to the newly created form
+				addTypeaheadSource();
+			});
+			
+		    //call Typeahead-Script:
+			addTypeaheadSource();
+		    	
+		   	function addTypeaheadSource(){
+		    	//create new array with length of the person_list
+		   		person_array = new Array({{ person_list|length }})
+		    	
+		    	//add all persons to the person_array
+		    	{% for p in person_list %}
+					person_array[{{ forloop.counter0 }}] = "{{ p }}";
+				{% endfor %}
+		    	
+				//choose the person_array as source for typeahead
+		    	$('.typeahead').typeahead({source: person_array})  
+		    }
+		</script>
+		
+		<hr />
+			
+	   	<input class="btn btn-primary" type="submit" onClick="submitFormOkay=true;" value="Save and Continue" />
+{% endblock %}

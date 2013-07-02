@@ -1,0 +1,203 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	{% load custom_filters %}
+
+    <title>{% block title %}{% endblock %}</title>
+    
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- js -->
+    <script src="/static/jquery-1.9.1.min.js"></script>
+ 	<script src="/static/bootstrap/js/bootstrap.min.js"></script>
+ 	<script src="/static/bootstrap_select/bootstrap-select.min.js"></script>
+    
+    <!-- css -->
+    <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="/static/bootstrap_select/bootstrap-select.min.css" rel="stylesheet" media="screen">
+ 	
+    <style type="text/css">
+	  /* Main marketing message and sign up button */
+      .jumbotron {
+        margin: 60px 0;
+        text-align: center;
+      }
+      .jumbotron h1 {
+        font-size: 48px;
+        line-height: 1;
+      }
+
+      /* Supporting marketing content */
+      .marketing {
+        margin: 60px 0;
+      }
+      .marketing p + h4 {
+        margin-top: 28px;
+      }
+
+      /* Custom container */
+      .container-narrow {
+        margin: 0 auto;
+        max-width: 700px;
+      }
+      .container-narrow > hr {
+        margin: 30px 0;
+  	  }
+  	  
+  	  /* Sticky Footer Stuff */
+  	  html,
+      body {
+        height: 100%;
+        /* The html and body elements cannot have any padding or margin. */
+      }
+
+      /* Wrapper for page content to push down footer */
+      #wrap {
+        min-height: 100%;
+        height: auto !important;
+        height: 100%;
+        /* Negative indent footer by it's height */
+        margin: 0 auto -60px;
+      }
+  	  
+  	  
+      /* Set the fixed height of the footer here */
+      #push,
+      #footer {
+        height: 60px;
+      }
+      
+      #footer {
+        background-color: #f4f4f4;
+      }
+
+      .container .credit {
+        margin: 20px 0;
+      }
+      
+      .controls textarea{
+      	width:60%;
+      }
+      
+      .controls ul{
+      	list-style:none;
+      }
+      
+      .breadcrumb{
+		padding-left:0px;
+		background-color: transparent;
+	  }
+	  
+ 		{% block extra_styles %}
+ 		{% endblock %}
+ 	</style>
+</head>
+
+<body onload="initialize()">
+	<div id="wrap">
+	
+		{% if request.user.get_profile %}
+				<div class="navbar-wrapper">
+					<div class="container">
+					
+		        		<div class="navbar navbar-inverse">
+		          			<div class="navbar-inner">
+								
+								{% block brand %}{% endblock %}
+		            			
+		            			<div class="nav-collapse collapse">
+		              				<ul class="nav">
+						                {% block navbar %} {% endblock %}
+		                 			</ul>
+			            		</div><!--/.nav-collapse -->
+		          			</div><!-- navbar-inner -->
+		        		</div><!-- navbar -->
+		      		</div><!-- container -->
+				</div><!-- navbar-wrapper -->
+		{% endif %}
+		
+		<div class="container-narrow">
+			{% block navigation %}
+			{% endblock %}
+		</div>
+
+		<div class="container-narrow">
+			{% block content %}
+			{% endblock %}
+		</div>
+		
+		<!-- function that is used to pop-up a comment/add a comment-form dynamically -->
+		<script>
+			$("a[rel=popover]").click(function(e) {
+		        e.preventDefault();
+		     });
+			
+			function commentButtonPressed(icon, field_name, field_id, table_name){
+				//change the buttons label
+				var iconName = "icon-chevron-down";
+				if(icon.className==iconName || icon.className==iconName+" collapsed") iconName="icon-chevron-up";
+				icon.className = iconName;
+				
+				//if there is no form existing, add an empty_form
+				if(!document.getElementById("collapse_"+field_id+"_"+field_name+"_"+table_name).innerHTML.replace(/\s+/g, '')){
+					//get the number of comment forms
+					var form_idx = $('#id_comment-TOTAL_FORMS').val();
+					//copy the form
+					document.getElementById("collapse_"+field_id+"_"+field_name+"_"+table_name).innerHTML=$('#comment_emptyForm').html().replace(/__prefix__/g, form_idx);
+					
+					//set the value of field_id to -1 if the parent object doesnt exist yet
+					if(field_id=="None"){
+						field_id=-1;
+					}
+					
+					//set the table_field attribute, necessary to save the comment
+					$('#id_comment-'+form_idx+'-table_name').val(table_name);
+					$('#id_comment-'+form_idx+'-table_id').val(field_id);
+					$('#id_comment-'+form_idx+'-table_field').val(field_name);
+					//increment the number of total forms
+					$('#id_comment-TOTAL_FORMS').val(parseInt(form_idx) + 1);
+				}
+			}
+		</script>
+		
+		<!-- emptyForm for comments. is needed in every formular -->
+		<div id="comment_emptyForm" style="display:none">
+			{% for field in comment_formset.empty_form.hidden_fields %}
+				{{ field }}
+			{% endfor %}
+			
+			{% for field in comment_formset.empty_form.visible_fields %}
+				<div class="control-group">
+					{% if field.is_hidden %}
+					{% else %}
+						<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+					{% endif %}							    
+					<div class="controls">
+						{{ field }}
+					</div>
+				</div>
+			{% endfor %}
+		</div>
+		
+	    <div id="push"></div>
+	</div>
+	
+	{% if request.user.get_profile %}
+		<div id="footer">
+	      	<div class="container">
+				<p class="muted credit">
+		      		<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/deed.de"><img alt="Creative Commons Lizenzvertrag" style="border-width:0; margin-right:5px; margin-left:1px" src="http://i.creativecommons.org/l/by-nc-sa/3.0/80x15.png" /></a>
+					<span style="vertical-align:middle; font-size:10pt">Copyright: </span>
+					<a xmlns:cc="http://creativecommons.org/ns#" href="https://github.com/dkalisch/morgenstadtDB" property="cc:attributionName" rel="cc:attributionURL" style="vertical-align:middle; font-size:10pt">Dominik Kalisch & Tobias Hauck</a>
+		      		
+					<br />
+					
+					<span style="font-size:8pt">Über diese Lizenz hinausgehende Erlaubnisse können Sie <a xmlns:cc="http://creativecommons.org/ns#" href="http://www.kalisch.biz/about/contact/" rel="cc:morePermissions">hier</a> erhalten.</span>
+				</p>
+	   		</div>
+	    </div>
+	 {% endif %}
+</body>
+
+</html>

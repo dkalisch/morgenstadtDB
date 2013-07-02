@@ -1,0 +1,614 @@
+{% extends "formular_base_template.html" %}
+{% load custom_filters %}
+
+{% block title %}{{ bestpractice.bp_name }} Details{% endblock %}
+
+{% block navigation %}
+	<ul class="breadcrumb">
+		<li><a href ="{% url bestpractice_add city_id=city.id bestpractice_id=bestpractice.id %}">{{ bestpractice.bp_name }}</a><span class="divider">/</span></li>
+		<li><a href ="{% url bestpractice_description city_id=city.id bestpractice_id=bestpractice.id %}">Description Level</a><span class="divider">/</span></li>
+		<li class="active">Detail Level<span class="divider">/</span></li>
+		<li><a href ="{% url bestpractice_impact city_id=city.id bestpractice_id=bestpractice.id %}">Impact Level</a><span class="divider">/</span></li>
+		<li><a href = "{% url impactfactor city_id=city.id bestpractice_id=bestpractice.id %}">Impact Factors</a>
+	</ul>
+{% endblock %}
+	
+
+{% block formular %}
+  	<form enctype="multipart/form-data" action="" method="post">{% csrf_token %} 
+  		{{ varformset.management_form }}
+  		{{ vardefformset.management_form }}
+  		{{ actorformset.management_form }}
+  		{{ comment_formset.management_form }}
+  		
+		<div style="display:none">
+			{% for form in comment_formset %}
+				{{ form.id }}
+			{% endfor %}
+		</div>
+  		
+  		{% if varformset.errors or actorformset.errors or vardefformset.errors %}
+			<p class="text-error">Please correct the Errors below!</p>	
+		{% endif %}
+  		
+  		<h1>Detail Level</h1>
+  		
+  		<br />
+		<h2>5. Technologie</h2>
+		<hr />
+		
+		<div class="fields">
+			{% for form in varformset %}
+		 		{% if form.instance.bp_vars_def_id.category == 5 %}
+					<fieldset>
+						{% for field in form.hidden_fields %}
+							{{ field }}
+						{% endfor %}
+					
+						{% for field in form.visible_fields %}
+							{% if field.errors %}
+								<div class="control-group error">
+								<label class="control-label" for="{{ field.name }}">{{ field.name }}</label>
+									<div class="controls">
+										{{ field }}
+										<span class="help-inline">{{ field.errors.0 }}</span>
+									</div>
+								</div>
+							{% else %}
+						    	{% if field.field|klass == "BooleanField" %}
+						    		<label class="checkbox">
+										{{ field.label }}
+										{{ field }}
+									</label>
+									
+									<span class="help-inline">
+										<div class="tooltipClass">
+											<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+										</div>
+									</span>
+								{% else %}
+									<div class="control-group">
+										{% if field.is_hidden %}
+										{% else %}
+											<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+										{% endif %}							    
+										<div class="controls">
+									   		{% if field.field.widget|klass == "CheckboxSelectMultiple" %}
+								    			<label class="checkbox">
+									   				{{ field }}
+												</label>
+								    		{% else %}
+												{{ field }}
+								    		{% endif %}
+								    		<span class="help-inline">
+												<div class="tooltipClass">
+													<a href="#" data-toggle="tooltip" title="{% if field.help_text %}{{ field.help_text }}{% else %}No description available.{% endif %}"><i class="icon-question-sign"></i></a>
+													<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+												</div>
+											</span>
+								    	</div>
+									</div>
+								{% endif %}
+							{% endif %}
+							
+							<!-- comment section -->
+						    <div id="collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" class="collapse">
+								{% for comment_form in comment_formset %}
+									{% if comment_form.instance.table_id == form.instance.id or comment_form.instance.table_id == -1 %}
+										{% if comment_form.instance.table_field == field.name and comment_form.instance.table_name == form.instance|to_class_name %}
+											<!-- if the field belongs to the form -->
+											<!-- draw the comment-form -->
+											{% for field in comment_form.hidden_fields %}
+												{{ field }}
+											{% endfor %}
+											
+											{% for field in comment_form.visible_fields %}
+												<div class="control-group">
+													{% if field.is_hidden %}
+													{% else %}
+														<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+													{% endif %}							    
+													<div class="controls">
+														{{ field }}
+													</div>
+												</div>
+											{% endfor %}
+											<!-- end of drawing -->
+										{% endif %}
+									{% endif %}
+								{% endfor %}
+							</div>
+						{% endfor %}
+					</fieldset>
+		 		{% endif %}
+			{% endfor %}
+				
+			<!-- new var_def fields will be added to this div -->
+			<div id="addVarDef5">
+			</div>
+
+			<!-- add-button -->
+			<div class="add5">
+	   			<input type="button" class="btn" onClick="newVarDef('5');" name="addVar5" value="+" />
+			</div>
+		</div>
+		
+		<br />			
+		<h2>6. Akteure / Organisation</h2>
+		<hr />
+		
+		<div class="fields">
+			{% for form in varformset %}
+				{% if form.instance.bp_vars_def_id.category == 6 %}
+					<fieldset>
+						{% for field in form.hidden_fields %}
+							{{ field }}
+						{% endfor %}
+					
+						{% for field in form.visible_fields %}
+							{% if field.errors %}
+								<div class="control-group error">
+								<label class="control-label" for="{{ field.name }}">{{ field.name }}</label>
+									<div class="controls">
+										{{ field }}
+										<span class="help-inline">{{ field.errors.0 }}</span>
+									</div>
+								</div>
+							{% else %}
+						    	{% if field.field|klass == "BooleanField" %}
+						    		<label class="checkbox">
+										{{ field.label }}
+										{{ field }}
+									</label>
+									
+									<span class="help-inline">
+										<div class="tooltipClass">
+											<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+										</div>
+									</span>
+								{% else %}
+									<div class="control-group">
+										{% if field.is_hidden %}
+										{% else %}
+											<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+										{% endif %}							    
+										<div class="controls">
+									   		{% if field.field.widget|klass == "CheckboxSelectMultiple" %}
+								    			<label class="checkbox">
+									   				{{ field }}
+												</label>
+								    		{% else %}
+												{{ field }}
+								    		{% endif %}
+								    		
+								    		<span class="help-inline">
+												<div class="tooltipClass">
+													<a href="#" data-toggle="tooltip" title="{% if field.help_text %}{{ field.help_text }}{% else %}No description available.{% endif %}"><i class="icon-question-sign"></i></a>
+													<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+												</div>
+											</span>
+								    	</div>
+									</div>
+								{% endif %}
+							{% endif %}
+							
+							<!-- comment section -->
+						    <div id="collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" class="collapse">
+								{% for comment_form in comment_formset %}
+									{% if comment_form.instance.table_id == form.instance.id or comment_form.instance.table_id == -1 %}
+										{% if comment_form.instance.table_field == field.name and comment_form.instance.table_name == form.instance|to_class_name %}
+											<!-- if the field belongs to the form -->
+											<!-- draw the comment-form -->
+											{% for field in comment_form.hidden_fields %}
+												{{ field }}
+											{% endfor %}
+											
+											{% for field in comment_form.visible_fields %}
+												<div class="control-group">
+													{% if field.is_hidden %}
+													{% else %}
+														<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+													{% endif %}							    
+													<div class="controls">
+														{{ field }}
+													</div>
+												</div>
+											{% endfor %}
+											<!-- end of drawing -->
+										{% endif %}
+									{% endif %}
+								{% endfor %}
+							</div>
+						{% endfor %}
+					</fieldset>
+				{% endif %}
+			{% endfor %}
+				
+			<!-- new var_def fields will be added to this div -->
+			<div id="addVarDef6">
+			</div>
+
+			<!-- add-button -->
+			<div class="add6">
+	   			<input type="button" class="btn" onClick="newVarDef('6');" name="addVar6" value="+" />
+			</div>
+		</div>		
+				
+		<br />
+		<h3>BP Actors</h3>
+
+		<div class="fields">
+			<div class='actorform_set'>
+					{% for form in actorformset.forms %}
+						<strong>{{ forloop.counter }}. Actor</strong>
+					    <table class='no_error'>
+					        <fieldset>
+								{% for field in form.hidden_fields %}
+									{{ field }}
+								{% endfor %}
+							
+								{% for field in form.visible_fields %}
+									{% if field.errors %}
+										<div class="control-group error">
+										<label class="control-label" for="{{ field.name }}">{{ field.name }}</label>
+											<div class="controls">
+												{{ field }}
+												<span class="help-inline">{{ field.errors.0 }}</span>
+											</div>
+										</div>
+									{% else %}
+								    	{% if field.field|klass == "BooleanField" %}
+								    		<label class="checkbox">
+												{{ field.label }}
+												{{ field }}
+											</label>
+											
+											<span class="help-inline">
+												<div class="tooltipClass">
+													<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+												</div>
+											</span>
+										{% else %}
+											<div class="control-group">
+												{% if field.is_hidden %}
+												{% else %}
+													<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+												{% endif %}							    
+												<div class="controls">
+											   		{% if field.field.widget|klass == "CheckboxSelectMultiple" %}
+										    			<label class="checkbox">
+											   				{{ field }}
+														</label>
+										    		{% else %}
+														{{ field }}
+										    		{% endif %}
+										    		
+										    		<span class="help-inline">
+														<div class="tooltipClass">
+															<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+														</div>
+													</span>
+										    	</div>
+											</div>
+										{% endif %}
+									{% endif %}
+									
+									<!-- comment section -->
+								    <div id="collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" class="collapse">
+										{% for comment_form in comment_formset %}
+											{% if comment_form.instance.table_id == form.instance.id or comment_form.instance.table_id == -1 %}	
+												{% if comment_form.instance.table_field == field.name and comment_form.instance.table_name == form.instance|to_class_name %}
+													<!-- if the field belongs to the form -->
+													<!-- draw the comment-form -->
+													{% for field in comment_form.hidden_fields %}
+														{{ field }}
+													{% endfor %}
+													
+													{% for field in comment_form.visible_fields %}
+														<div class="control-group">
+															{% if field.is_hidden %}
+															{% else %}
+																<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+															{% endif %}							    
+															<div class="controls">
+																{{ field }}
+															</div>
+														</div>
+													{% endfor %}
+													<!-- end of drawing -->
+												{% endif %}
+											{% endif %}
+										{% endfor %}
+									</div>
+								{% endfor %}
+							</fieldset>
+					    </table>
+				    
+					    <br />
+					{% endfor %}
+					
+				<div class="extra_actorform">
+				</div>
+						
+				<input class="btn" type="button" id="add_more" value="Add Actor" />
+				
+				<div class="empty_form" style="display:none">
+				    <table class='no_error'>
+			       		<fieldset>
+							{% for field in actorformset.empty_form.hidden_fields %}
+								{{ field }}
+							{% endfor %}
+						
+							{% for field in actorformset.empty_form.visible_fields %}
+								{% if field.errors %}
+									<div class="control-group error">
+									<label class="control-label" for="{{ field.name }}">{{ field.name }}</label>
+										<div class="controls">
+											{{ field }}
+											<span class="help-inline">{{ field.errors.0 }}</span>
+										</div>
+									</div>
+								{% else %}
+							    	{% if field.field|klass == "BooleanField" %}
+							    		<label class="checkbox">
+											{{ field.label }}
+											{{ field }}
+										</label>
+									{% else %}
+										<div class="control-group">
+											{% if field.is_hidden %}
+											{% else %}
+												<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+											{% endif %}							    
+												<div class="controls">
+											   		{% if field.field.widget|klass == "CheckboxSelectMultiple" %}
+										    			<label class="checkbox">
+											   				{{ field }}
+														</label>
+										    		{% else %}
+														{{ field }}
+										    		{% endif %}
+										    	</div>
+										</div>
+									{% endif %}
+								{% endif %}
+							{% endfor %}
+						</fieldset>
+			   		</table>
+				</div>
+			</div>			
+		</div>
+			
+		<br />
+		<h2>7. Wirtschaft / Finanzen</h2>
+		<hr />
+		
+		<div class="fields">
+			{% for form in varformset %}
+		 		{% if form.instance.bp_vars_def_id.category == 7 %}
+					<fieldset>
+						{% for field in form.hidden_fields %}
+							{{ field }}
+						{% endfor %}
+					
+						{% for field in form.visible_fields %}
+							{% if field.errors %}
+								<div class="control-group error">
+								<label class="control-label" for="{{ field.name }}">{{ field.name }}</label>
+									<div class="controls">
+										{{ field }}
+										<span class="help-inline">{{ field.errors.0 }}</span>
+									</div>
+								</div>
+							{% else %}
+						    	{% if field.field|klass == "BooleanField" %}
+						    		<label class="checkbox">
+										{{ field.label }}
+										{{ field }}
+									</label>
+									
+									<span class="help-inline">
+										<div class="tooltipClass">
+											<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+										</div>
+									</span>
+								{% else %}
+									<div class="control-group">
+										{% if field.is_hidden %}
+										{% else %}
+											<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+										{% endif %}							    
+										<div class="controls">
+									   		{% if field.field.widget|klass == "CheckboxSelectMultiple" %}
+								    			<label class="checkbox">
+									   				{{ field }}
+												</label>
+								    		{% else %}
+												{{ field }}
+								    		{% endif %}
+								    		
+								    		<span class="help-inline">
+												<div class="tooltipClass">
+													<a href="#" data-toggle="tooltip" title="{% if field.help_text %}{{ field.help_text }}{% else %}No description available.{% endif %}"><i class="icon-question-sign"></i></a>
+													<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+												</div>
+											</span>
+								    	</div>
+									</div>
+								{% endif %}
+							{% endif %}
+							
+							<!-- comment section -->
+						    <div id="collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" class="collapse">
+								{% for comment_form in comment_formset %}
+									{% if comment_form.instance.table_id == form.instance.id or comment_form.instance.table_id == -1 %}
+										{% if comment_form.instance.table_field == field.name and comment_form.instance.table_name == form.instance|to_class_name %}
+											<!-- if the field belongs to the form -->
+											<!-- draw the comment-form -->
+											{% for field in comment_form.hidden_fields %}
+												{{ field }}
+											{% endfor %}
+											
+											{% for field in comment_form.visible_fields %}
+												<div class="control-group">
+													{% if field.is_hidden %}
+													{% else %}
+														<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+													{% endif %}							    
+													<div class="controls">
+														{{ field }}
+													</div>
+												</div>
+											{% endfor %}
+											<!-- end of drawing -->
+										{% endif %}
+									{% endif %}
+								{% endfor %}
+							</div>
+						{% endfor %}
+					</fieldset>
+		 		{% endif %}
+			{% endfor %}
+				
+			<!-- new var_def fields will be added to this div -->
+			<div id="addVarDef7">
+			</div>
+
+			<!-- add-button -->
+			<div class="add7">
+	   			<input type="button" class="btn" onClick="newVarDef('7');" name="addVar7" value="+" />
+			</div>
+		</div>
+	
+		<br />			
+		<h2>8. Ressourcen Input</h2>
+		<hr />
+		
+		<div class="fields">
+			{% for form in varformset %}
+				{% if form.instance.bp_vars_def_id.category == 8 %}
+					<fieldset>
+						{% for field in form.hidden_fields %}
+							{{ field }}
+						{% endfor %}
+					
+						{% for field in form.visible_fields %}
+							{% if field.errors %}
+								<div class="control-group error">
+								<label class="control-label" for="{{ field.name }}">{{ field.name }}</label>
+									<div class="controls">
+										{{ field }}
+										<span class="help-inline">{{ field.errors.0 }}</span>
+									</div>
+								</div>
+							{% else %}
+						    	{% if field.field|klass == "BooleanField" %}
+						    		<label class="checkbox">
+										{{ field.label }}
+										{{ field }}
+									</label>
+									
+									<span class="help-inline">
+										<div class="tooltipClass">
+											<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+										</div>
+									</span>
+								{% else %}
+									<div class="control-group">
+										{% if field.is_hidden %}
+										{% else %}
+											<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+										{% endif %}							    
+										<div class="controls">
+									   		{% if field.field.widget|klass == "CheckboxSelectMultiple" %}
+								    			<label class="checkbox">
+									   				{{ field }}
+												</label>
+								    		{% else %}
+												{{ field }}
+								    		{% endif %}
+								    		
+								    		<span class="help-inline">
+												<div class="tooltipClass">
+													<a href="#" data-toggle="tooltip" title="{% if field.help_text %}{{ field.help_text }}{% else %}No description available.{% endif %}"><i class="icon-question-sign"></i></a>
+													<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+												</div>
+											</span>
+								    	</div>
+									</div>
+								{% endif %}
+							{% endif %}
+							
+							<!-- comment section -->
+						    <div id="collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" class="collapse">
+								{% for comment_form in comment_formset %}
+									{% if comment_form.instance.table_id == form.instance.id or comment_form.instance.table_id == -1 %}
+										{% if comment_form.instance.table_field == field.name and comment_form.instance.table_name == form.instance|to_class_name %}
+											<!-- if the field belongs to the form -->
+											<!-- draw the comment-form -->
+											{% for field in comment_form.hidden_fields %}
+												{{ field }}
+											{% endfor %}
+											
+											{% for field in comment_form.visible_fields %}
+												<div class="control-group">
+													{% if field.is_hidden %}
+													{% else %}
+														<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+													{% endif %}							    
+													<div class="controls">
+														{{ field }}
+													</div>
+												</div>
+											{% endfor %}
+											<!-- end of drawing -->
+										{% endif %}
+									{% endif %}
+								{% endfor %}
+							</div>
+						{% endfor %}
+					</fieldset>
+			 	{% endif %}
+			{% endfor %}
+				
+			<!-- new var_def fields will be added to this div -->
+			<div id="addVarDef8">
+			</div>
+
+			<!-- add-button -->
+			<div class="add8">
+	   			<input type="button" class="btn" onClick="newVarDef('8');" name="addVar8" value="+" />
+			</div>
+		</div>
+	
+		<hr />
+		
+   		<input class="btn btn-primary" type="submit" onClick="submitFormOkay=true;" value="Save and Continue" />
+		
+		<script>
+		    //add bp_actors
+			$('#add_more').click(function() {
+		        var form_idx = $('#id_actor-TOTAL_FORMS').val();
+		        $('.extra_actorform').append('<br /><strong>'+(parseInt(form_idx)+1)+'. Actor</strong>')
+		        $('.extra_actorform').append($('.empty_form').html().replace(/__prefix__/g, form_idx));
+		        $('#id_actor-TOTAL_FORMS').val(parseInt(form_idx) + 1);
+				addTypeaheadSource();
+		    });
+		
+		    //call Typeahead-Script:
+			addTypeaheadSource();
+		    	
+		   	function addTypeaheadSource(){
+		    	//create new array with length of the person_list
+		   		actor_array = new Array({{ actor_list|length }})
+		    	
+		    	//add all persons to the person_array
+		    	{% for a in actor_list %}
+					actor_array[{{ forloop.counter0 }}] = "{{ a }}";
+				{% endfor %}
+
+				//choose the person_array as source for typeahead
+		    	$('.typeahead').typeahead({source: actor_array})  
+		    }
+		</script>
+{% endblock %}

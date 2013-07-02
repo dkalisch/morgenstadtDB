@@ -1,0 +1,32 @@
+{% extends "overview_base_template.html" %}
+
+{% block title %}Interview Variables{% endblock %}
+
+{% block navigation %}
+	<ul class="breadcrumb">
+		<li><a href ="{% url interview_add city_id=city.id interview_id=interview.id %}">Interview with: {{ interview.person }}</a><span class="divider">/</span></li>
+		<li class="active">Variables<span class="divider">/</span></li>
+		<li><a href ="{% url soziomatrix_add city_id=city.id interview_id=interview.id %}">Soziomatrix</a></li> 
+	</ul>
+{% endblock %}		
+	
+{% block listing %}
+	<h1>Interview Variables</h1>
+	<br />
+	
+	{% for interview_var in interview_var_list %}
+		<strong>Key:</strong> {{ interview_var.key }}<br />
+		{% if interview_var.value %}
+			<strong>Value:</strong> {{ interview_var.value }} <br />
+		{% endif %}
+		
+		{% if interview_var.file %}
+			<strong>File:</strong> {{ interview_var.file }}<br />
+		{% endif %}
+		
+		<a class="btn" href="{% url interview_var_add city_id=city.id interview_id=interview.id interview_var_id=interview_var.id %}">Edit</a>
+		<hr />	
+	{% endfor %}
+
+	<a class="btn btn-primary" href="{% url interview_var_add city_id=city.id interview_id=interview.id %}">Add new</a>
+{% endblock %}

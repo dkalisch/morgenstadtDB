@@ -1,0 +1,20 @@
+{% extends "overview_base_template.html" %}
+
+{% block title %}Best Practices{% endblock %}
+
+<hr />
+
+{% block listing %}
+	<h1>Best Practices in {{ city.city_name }}</h1>
+	
+	<br />
+
+	{% for bestpractice in bestpractice_list %}
+		<h3>{{ bestpractice.bp_name }}</h3>
+		<p><strong>Description:</strong> {{ bestpractice.bp_desc }}<br />
+		<a class="btn" href="{% url bestpractice_add city_id=city.id bestpractice_id=bestpractice.id %}">Edit</a>
+		<hr />
+	{% endfor %}
+
+	<a class="btn btn-primary" href="{% url bestpractice_add city_id=city.id %}">Add new</a>
+{% endblock %}

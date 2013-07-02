@@ -1,0 +1,130 @@
+{% extends "base_form_template.html" %}
+
+{% block brand %}<a class="brand" href="{% url home %}">m:ci</a>{% endblock %}
+
+{% block extra_styles %}
+	.span4{
+		margin-top:20px;
+		text-align:center;
+	}
+	
+	.row-fluid{
+    	display: inline-block;
+	    position: relative;
+	}
+	
+	.span3{
+		margin-top:80px;
+	}
+{% endblock %}
+
+{% block navbar %}
+	<li><a href="{% url city city_id=city.id %}">{{ city.city_name }}</a></li>
+	<li><a href="{% url bestpractice city.id %}">Best Practices</a></li>
+	<li><a href="{% url interview city.id %}">Interviews</a></li>
+								
+	<li class="dropdown">
+    	<a href="#" class="dropdown-toggle" data-toggle="dropdown">Sectors<b class="caret"></b></a>
+       		<ul class="dropdown-menu">
+       			{% for sector in sector_list %}
+       				<li><a href="{% url sector_add city_id=city.id sector_id=sector.id %}">{{ sector.sector_name }}</a></li>
+       			{% endfor %}
+            </ul>
+	</li>							
+								
+	<li><a href="{% url password_view %}">Password</a></li>
+	<li><a href="{% url logout_view %}">Logout</a></li>
+{% endblock %}
+
+{% block content %}
+
+	{% block formular %}
+	{% endblock %}
+	
+	{% block other_content %}
+	{% endblock %}
+		<!-- empty_form that is added to the divs -->
+		<div id="addVarDef" style="display:none">
+			{{ vardefformset.empty_form }}
+		</div>
+		
+		<!-- the forms need to be in the html page, otherwise there
+		 will be problems with the formset, but we don't want to
+		 see them -->
+		<div style="display:none">
+			-----------------------------------------
+			<br />
+			{% for form in vardefformset %}
+				{{ form }}
+			{% endfor %}
+			<br />
+			-----------------------------------------
+		</div>
+	</form>
+	
+	<div id="saveModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+			<h3 id="myModalLabel">Save Changes?</h3>
+		</div>
+		
+		<div class="modal-body">
+			<p>You changed the form data without saving!<br />
+			Are you sure you want to leave the page?</p>
+		</div>
+		
+		<div class="modal-footer">
+			<button class="btn"  onClick="redirect()" >Leave</button>
+			<button class="btn btn-primary" data-dismiss="modal" aria-hidden="true" id="modalSave">Save changes</button>
+		</div>
+	</div>
+	
+	<script>
+		//initialize tooltips
+		$('.tooltipClass').tooltip({ selector: "a" })
+	
+		//save the clean form for later comparison, used with modal
+		var url;
+	 	var form_clean;
+	 	$(function() { 
+	 	    form_clean = $("form").serialize();  
+	 	});
+	 	
+	 	//saves the form, used with modals
+	 	$("#modalSave").bind('click', function(){
+	 		$('form').submit();
+	 	})
+	 	
+	 	//redirects to a given url, used with modals
+	 	function redirect(){
+	 		window.location.href = url;
+	 	}
+
+	 	//display a modal if the user wants to leave the page without
+	 	//saving
+		var submitFormOkay=false;
+	    $("a").bind('click', function(){
+	        var form_dirty = $("form").serialize();  
+			if (form_clean!=form_dirty) {
+				//if not submitFormOkay and if the a-tag does not contain the word "popover"
+				if(!submitFormOkay && $(this).attr("rel").toLowerCase().indexOf("popover") == -1){
+					submitFormOkay=false;
+				 	$("#saveModal").modal('show');
+				 	url=$(this).attr('href');
+				}
+		        return true;
+	   		 }
+	    });
+	    
+	    //copy the code from the addVarDef-div to create new 
+	    //variable definitions dynamically
+		function newVarDef(buttonNumber){
+	    	//copy the html
+			var form_idx = $('#id_vardef-TOTAL_FORMS').val();
+			$('#addVarDef'+buttonNumber).append($('#addVarDef').html().replace(/__prefix__/g, form_idx));
+			document.getElementById('id_vardef-'+form_idx+'-category').value=buttonNumber;
+			$('#addVarDef'+buttonNumber).append('<input type="hidden" name="_category" value="'+buttonNumber+'"></input>')
+			$('#id_vardef-TOTAL_FORMS').val(parseInt(form_idx) + 1);
+	    }
+	</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "formular_base_template.html" %}
+
+{% load custom_filters %}
+
+{% block title %}Add Best Practice{% endblock %}
+
+{% block navigation %}
+    <ul class="breadcrumb">
+		{% if bestpractice.id %}
+			<li class="active">{{ bestpractice.bp_name }}<span class="divider">/</span></li>
+		    <li><a href ="{% url bestpractice_description city_id=city.id bestpractice_id=bestpractice.id %}">Description Level</a><span class="divider">/</span></li>
+			<li><a href ="{% url bestpractice_detail city_id=city.id bestpractice_id=bestpractice.id %}">Detail Level</a><span class="divider">/</span></li>
+			<li><a href ="{% url bestpractice_impact city_id=city.id bestpractice_id=bestpractice.id %}">Impact Level</a><span class="divider">/</span></li>
+			<li><a href ="{% url impactfactor city_id=city.id bestpractice_id=bestpractice.id %}">Impact Factors</a></li>
+		{% else %}
+			<li class="active">New Best Practice</li>
+		{% endif %}
+    </ul>
+{% endblock %}	
+
+{% block formular %}
+	<h1>General Information</h1>
+	<br />
+	
+	<form enctype="multipart/form-data" action="" method="post">{% csrf_token %} 
+    		{{ comment_formset.management_form }}
+    
+    		<div style="display:none">
+				{% for form in comment_formset %}
+					{{ form.id }}
+				{% endfor %}
+			</div>
+    
+			<fieldset>
+				{% if form.errors %}
+					<p class="text-error">Please correct the Errors below!</p>	
+				{% endif %}
+				
+				{{ form.non_field_errors }}
+				{% for field in form %}
+					{% if field.errors %}
+						<div class="control-group error">
+							<label class="control-label" for="{{ field.name }}">{{ field.name }}</label>
+							<div class="controls">
+								{{ field }}
+								<span class="help-inline">{{ field.errors.0 }}</span>
+							</div>
+						</div>
+					{% else %}
+				    	{% if field.field|klass == "BooleanField" %}
+				    		<label class="checkbox">
+								{{ field.label }}
+								{{ field }}
+				    		<span class="help-inline">
+								<div class="tooltipClass">
+									<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+								</div>
+							</span>
+							</label>
+						{% else %}
+							<div class="control-group">
+							    <label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+							    <div class="controls">
+							    	{% if field.field.widget|klass == "CheckboxSelectMultiple" %}
+						    			<label class="checkbox">
+							    			{{ field }}
+										</label>
+						    		{% else %}
+										{{ field }}
+						    		{% endif %}
+   						    		<span class="help-inline">
+										<div class="tooltipClass">
+											<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+										</div>
+									</span>
+						    	</div>
+						    </div>
+						{% endif %}
+					{% endif %}
+					
+					<!-- comment section -->
+				    <div id="collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" class="collapse">
+						{% for comment_form in comment_formset %}
+							{% if comment_form.instance.table_id == form.instance.id or comment_form.instance.table_id == -1 %}
+								{% if comment_form.instance.table_field == field.name and comment_form.instance.table_name == form.instance|to_class_name %}
+									<!-- if the field belongs to the form -->
+									<!-- draw the comment-form -->
+									{% for field in comment_form.hidden_fields %}
+										{{ field }}
+									{% endfor %}
+									
+									{% for field in comment_form.visible_fields %}
+										<div class="control-group">
+											{% if field.is_hidden %}
+											{% else %}
+												<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+											{% endif %}							    
+											<div class="controls">
+												{{ field }}
+											</div>
+										</div>
+									{% endfor %}
+									<!-- end of drawing -->
+								{% endif %}
+							{% endif %}
+						{% endfor %}
+					</div>
+					<br />
+				{% endfor %}
+   			</fieldset>
+			
+	  		<br />
+		    
+		    <input class="btn btn-primary" type="submit" onClick="submitFormOkay=true;" value="Save" />
+{% endblock %}

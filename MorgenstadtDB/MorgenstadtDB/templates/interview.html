@@ -1,0 +1,19 @@
+{% extends "overview_base_template.html" %}
+
+{% block title %}Interviews{% endblock %}
+
+{% block listing %}
+	<h1>Interviews in {{ city.city_name }}</h1>
+	
+	<br />
+	
+	
+	{% for interview in interview_list %}
+		<strong>Person:</strong> {{ interview.person }}<br />
+		<strong>Institution:</strong> {{ interview.institution }}<br />
+		<a class="btn" href="{% url interview_add city_id=city.id interview_id=interview.id %}">Edit</a></p>
+		<hr />
+	{% endfor %}
+
+	<a class="btn btn-primary" href="{% url interview_add city_id=city.id %}">Add new</a>
+{% endblock %}
