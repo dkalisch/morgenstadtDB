@@ -4,7 +4,7 @@
 
 {% block formular %}
 	<script type="text/javascript"
-      src="http://maps.googleapis.com/maps/api/js?key=AIzaSyChqBV4DcthfYxAZcqFdcQryv7hznUYovU&sensor=true">
+      src='http://maps.googleapis.com/maps/api/js?key={{ "GOOGLE_MAPS_API_KEY"|value_from_settings }}&sensor=true'>
     </script>
 	
 	<script type="text/javascript">
@@ -24,27 +24,35 @@
 	<h1>City Variables</h1>
 	<hr />
 	
-
-    <div class="row">
-	    <div class="span3">
-			<strong>Full Name:</strong> {{ city.full_name }}	<br/>
-			<strong>ADM1 Code:</strong> {{ city.adm1_code }} <br/>
-			<strong>Elevation:</strong> {{ city.elevation }} <br/>
-			<strong>Metropolitan Area:</strong> {{ city.metropolitan_area }} <br/>
-			<strong>City Latitude:</strong> {{ city.city_lat }} <br/>
-			<strong>City Longitude:</strong> {{ city.city_long }} <br/>
-			<strong>Difference to UTC:</strong> {{ city.diff_UTC }}
-	    </div>
-	    
-	    <div class="span4 offset2">
-		   	<div id="map_canvas" style="width:300px; height:300px"></div>
-	    </div>
-    </div>
-
 	<form enctype="multipart/form-data" action="" method="post">{% csrf_token %} 
 	 	{{ formset.management_form }}
 	 	{{ vardefformset.management_form }}
   		{{ comment_formset.management_form }}
+
+	    <div class="container-fluid">
+	    	<div class="row-fluid">
+		    	{% if request.user.is_superuser %}
+		    		<div class="span5">
+			    		{{ city_form }}
+			    	</div>
+			    {% else %}
+					<div class="span3">
+						<strong>Full Name:</strong> {{ city.full_name }}	<br/>
+						<strong>ADM1 Code:</strong> {{ city.adm1_code }} <br/>
+						<strong>Elevation:</strong> {{ city.elevation }} <br/>
+						<strong>Metropolitan Area:</strong> {{ city.metropolitan_area }} <br/>
+						<strong>City Latitude:</strong> {{ city.city_lat }} <br/>
+						<strong>City Longitude:</strong> {{ city.city_long }} <br/>
+						<strong>Difference to UTC:</strong> {{ city.diff_UTC }}
+				    </div>
+			    {% endif %}
+			    
+			    <div class="span4 offset2">   
+			   		<div id="map_canvas" style="width:300px; height:300px;"></div>
+			    </div>
+	 		</div>
+	    </div>
+    
 		
 		<div style="display:none">
 			{% for form in comment_formset %}
@@ -258,5 +266,5 @@
 		
 		<hr />
 		
-	  	<input class="btn btn-primary" type="submit" value="Save and Continue" />
+	  	<input class="btn btn-primary" type="submit" name="Save" value="Save" />
 {% endblock %}

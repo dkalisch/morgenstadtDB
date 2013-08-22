@@ -16,6 +16,11 @@ class author(models.Model):
     
     def __unicode__(self):
         return unicode(self.author_name)
+    
+    """class Meta:
+        permissions = (
+            ("isAuthor", "The user is an author, not a partner."),
+        )"""
         
 class country(models.Model):
     cc_iso = models.CharField(max_length=2, primary_key=True)
@@ -119,6 +124,9 @@ class sectors(models.Model):
     
     def __unicode__(self):
         return unicode(self.sector_name)
+    
+    def get_id_as_string(self):
+        return "|"+str(self.id)+"|"
     
     class Meta():
         verbose_name= "sector"
@@ -227,6 +235,14 @@ class bp_actors(models.Model):
     classification = models.CharField(max_length=50, blank=True, null=True)
     insert_time = models.DateTimeField()
     update_time = models.DateTimeField(blank=True, null=True)
+    CLASSIFICATION_CHOICES = {
+            "1": 'Initiator',
+            "2": 'Beschliessendes Gremium',
+            "3": 'Durchfuehrer',
+            "4": 'Finanzierer',
+            "5": 'Nutzer',
+            "6": 'Weiterer Akteur',
+            }
     
     #ForeignKeys
     best_practice_id = models.ForeignKey(best_practices)

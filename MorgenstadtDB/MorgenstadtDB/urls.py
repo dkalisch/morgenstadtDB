@@ -6,15 +6,20 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-                       #------ LOGIN/LOGOUT
-                       url(r'^accounts/login/$',  'django.contrib.auth.views.login',name='login_view'),
+                       #------ LOGIN/LOGOUT/PERMISSION_DENIED
+                       url(r'^accounts/login/$',  'MorgenstadtDB.database.views.login_view',name='login_view'),
                        url(r'^accounts/logout/$', 'MorgenstadtDB.database.views.logout_view', name='logout_view'),
+                       #url(r'^accounts/permissionDenied/$', 'MorgenstadtDB.database.views.permissionDenied_view', name='permissionDenied_view'),
+                       
                        
                        #------ CHANGE PASSWORD
                        url(r'^accounts/password/$', 'MorgenstadtDB.database.views.password_view', name='password_view'),
                        
                        #------ HOME
                        url(r'^$', 'MorgenstadtDB.database.views.home_view', name='home'),
+                       
+                       #------ PARTNER-SITE
+                       #url(r'^partner/$', 'MorgenstadtDB.database.views.partner_view', name='partner'),
                        
                        
                        #------ CITY

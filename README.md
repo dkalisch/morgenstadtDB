@@ -16,3 +16,13 @@ The project can be used as reference for the following problems:
 - working with the Django Forms API
 - creating dynamic forms with Django, JavaScript and JQuery
 - quick-styling with Twitter Bootstrap
+
+## Changelog ##
+Version 0.2
+
+- Changed settings of Google API
+- City data can be edited in the frontend, if the user is a "superuser"
+- Improved organisation of Impact Factors in categories and the possibility to delete/connect Impact Factors dynamically to Best Practices
+- Improved error-pages
+- Improved usability, for example by adding extra "Save"-buttons, altering checkbox-widgets and sorting information in dropdowns
+- Small bug-fixes

@@ -12,6 +12,37 @@ from MorgenstadtDB.database.models import sectors, sector_vars, x_fact_fact, \
 from django import forms
 from django.forms.extras.widgets import SelectDateWidget
 from django.forms.models import ModelForm
+from operator import itemgetter
+
+
+class CityInputForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(CityInputForm, self).__init__(*args, **kwargs)
+        self.fields['city_lat'] = forms.FloatField(required=False)
+        self.fields['city_lat'].label = "City Latitude"
+
+        self.fields['city_long'] = forms.FloatField(required=False)
+        self.fields['city_long'].label = "City Longitude"
+
+        self.fields['elevation'] = forms.IntegerField(required=False)
+        self.fields['elevation'].label = "Elevation"
+
+        self.fields['adm1_code'] = forms.IntegerField(required=False)
+        self.fields['adm1_code'].label = "ADM1 Code"
+
+        self.fields['metropolitan_area'] = forms.IntegerField(required=False)
+        self.fields['metropolitan_area'].label = "Metropolitan Area"
+
+        self.fields['full_name'] = forms.CharField(max_length=50, required=False)
+        self.fields['full_name'].label = "Full Name"
+
+        self.fields['diff_UTC'] = forms.CharField(max_length=50, required=False)
+        self.fields['diff_UTC'].label = "Difference to UTC"
+
+        class Meta():
+            model=cities
+            fields = ('full_name', 'adm1_code', 'elevation', 'metropolitan_area', 'city_lat', 'city_long', 'diff_UTC', )
+    
 
 class InterviewInputForm(ModelForm):    
     def __init__(self, *args, **kwargs):
@@ -34,8 +65,8 @@ class InterviewInputForm(ModelForm):
         self.fields['interview_date']=forms.DateField(widget=SelectDateWidget(years=range(2020, 1940, -1)))
         self.fields['interview_date'].label= "The date of the Interview"
         
-        self.fields['authors_present'] = forms.ModelMultipleChoiceField(queryset=QUERYSET, widget=forms.CheckboxSelectMultiple)
-        self.fields['authors_present'].label = "The following Authors were present at the Interview"
+        self.fields['authors_present'] = forms.ModelMultipleChoiceField(queryset=QUERYSET)
+        self.fields['authors_present'].label = "The following Authors were present at the Interview (for multiple selection hold down ctrl)"
         
         self.fields['txtData']=forms.FileField(required=False)
         self.fields['txtData'].label = "Upload a text-file (optional)"
@@ -88,8 +119,8 @@ class BestpracticeInputForm(ModelForm):
     bp_desc = forms.CharField(widget=forms.Textarea, required=False)
     bp_desc.label = "Description of the Best Practice (optional)"
     
-    sectors= forms.ModelMultipleChoiceField(queryset=sectors.objects.all(), widget=forms.CheckboxSelectMultiple)
-    sectors.label = "To which Sectors does the Best Practice belong?"
+    sectors= forms.ModelMultipleChoiceField(queryset=sectors.objects.all())
+    sectors.label = "To which Sectors does the Best Practice belong? (for multiple selection hold down ctrl)"
     
     planning_phase = forms.BooleanField(required=False)
     planning_phase.label = "Best Practice is in the planning phase"
@@ -129,6 +160,9 @@ class BestpracticeVarInputForm(ModelForm):
                     DD_LIST.append((item.value, item.name))
             except:
                 DD_LIST=[]
+            
+            #sort the dropdown_list by item.value
+            DD_LIST = sorted(DD_LIST, key=itemgetter(0))
             
             self.fields['value']=forms.ChoiceField(choices=DD_LIST, required=False)
         
@@ -401,7 +435,7 @@ class XFactSectInputForm(ModelForm):
 class RelationshipImpactFactorForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super(RelationshipImpactFactorForm, self).__init__(*args, **kwargs)
-        IMPACT_CHOICES = ((0, "0"),(1, "+1"),(-1, "-1"))
+        IMPACT_CHOICES = ((0, "0 = No Impact"),(1, "+1 = Positive Impact"),(-1, "-1 = Negative Impact"))
         label='Impact of '+str(self.instance.impact_factor_id1)+" on "+str(self.instance.impact_factor_id2)
         
         self.fields['impact'] = forms.ChoiceField(choices=IMPACT_CHOICES)

@@ -54,6 +54,10 @@
 	    	<input type="text" class="input-block-level" placeholder="User name" name="username">
 	    	<input type="password" class="input-block-level" placeholder="Password" name="password">
 	        
+	        {% if error_msg %}
+	        	<p class="text-error">{{ error_msg }}</p>
+	       	{% endif %}
+	       	
 	        <button class="btn btn-large btn-primary" type="submit">Log in</button>
 	    	<input type="hidden" name="next" value="{{ next|escape }}" />
 	  	</form>

@@ -2,7 +2,7 @@
 from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS as TCP
 import os
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -21,6 +21,8 @@ DATABASES = {
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
     }
 }
+
+GOOGLE_MAPS_API_KEY = ""
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -87,7 +89,7 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'dcqqw-r^6=fop6k$t-dl)rv#3y@-xmffow+5gw&amp;na8+ih!!pg*'
+SECRET_KEY = ''
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -119,7 +121,7 @@ ROOT_URLCONF = 'MorgenstadtDB.urls'
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'MorgenstadtDB.wsgi.application'
 
-TEMPLATE_DIRS = ('PATH/TO/MorgenstadtDB/templates'
+TEMPLATE_DIRS = ('C:/Users/hauck/workspace/MorgenstadtDB/MorgenstadtDB/templates'
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.

@@ -1,19 +1,28 @@
 from MorgenstadtDB.database.forms import *
 from MorgenstadtDB.database.models import interview_vars, impact_factor_vars
 from django.contrib import auth
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required, permission_required, \
+    user_passes_test
 from django.forms.models import modelformset_factory
+from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404, redirect
 from django.template.context import RequestContext
 from django.utils.datetime_safe import datetime
-from django.forms.forms import Form
+
+#returns true, if the user has the isAuthor permission
+def isAuthor(user):
+    return user.is_authenticated() and user.has_perm("database.isAuthor")
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def home_view(request):
     city_list = cities.objects.all()
     return render_to_response('home.html', {'city_list':city_list, 'request':request, }, RequestContext(request))
 
+
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def city_view(request, **kwargs):
     city_id = kwargs.get('city_id');
     city_instance = get_object_or_404(cities, id=city_id)
@@ -26,6 +35,7 @@ def city_view(request, **kwargs):
     return render_to_response('city.html', {'city': city_instance, 'sector_list':sector_list, 'bestpractice_list':bestpractice_list, 'interview_list':interview_list, 'notInEditView':notInEditView, }, RequestContext(request))
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def city_var_view(request, **kwargs):
     city_id = kwargs.get('city_id')
     city_instance = get_object_or_404(cities, id=city_id)
@@ -34,7 +44,6 @@ def city_var_view(request, **kwargs):
     VarDefFormSet = modelformset_factory(city_vars_def, CityVarDefInputForm, extra=0)
     sector_list = sectors.objects.all()
     CommentFormSet = modelformset_factory(comments_fields, CommentForm, extra=0)
-
         
     # create a sector_var object for every global sector_var_def, if it doesn't exist
     for city_var_def in city_var_def_list:
@@ -45,6 +54,7 @@ def city_var_view(request, **kwargs):
     
     # if site is submitted normally
     if request.method == 'POST':
+        city_form = CityInputForm(request.POST, instance=city_instance)
         formset = ModelFormSet(request.POST, request.FILES, prefix="var")
         vardefformset = VarDefFormSet(request.POST, request.FILES, prefix="vardef")
         comment_formset = CommentFormSet(request.POST, prefix="comment")
@@ -52,24 +62,36 @@ def city_var_view(request, **kwargs):
         print comment_formset.errors
         
         # normal save and continue procedure:
-        if formset.is_valid() and vardefformset.is_valid() and comment_formset.is_valid():
+        if city_form.is_valid() and formset.is_valid() and vardefformset.is_valid() and comment_formset.is_valid():
+            instance = city_form.save(commit=False)
+            
+            #if the city_instance was changed, set update information
+            if not cities.objects.get(pk=city_id).__dict__ == instance.__dict__:
+                instance.update_by = request.user.get_profile()
+                instance.update_time = datetime.now()
+                
+                #save the modified city_instance
+                instance.save()
+                
+            
             # custom saveFormset method
             saveCityVarFormset(formset, request)
             saveVarDefFormset(vardefformset, request, city_instance, city_instance)
             #save the comment formset
             saveCommentFormset(comment_formset, request, "")  
             
-            return redirect('/city/' + city_id + '/vars/')
-        return render_to_response('city_var.html', {'formset':formset, 'comment_formset':comment_formset, 'sector_list':sector_list, 'vardefformset':vardefformset, 'city_var_list':city_var_list, 'city':city_instance, 'city':city_instance, }, RequestContext(request))
+        return render_to_response('city_var.html', {'formset':formset, 'city_form':city_form, 'comment_formset':comment_formset, 'sector_list':sector_list, 'vardefformset':vardefformset, 'city_var_list':city_var_list, 'city':city_instance, 'city':city_instance, }, RequestContext(request))
     
+    city_form = CityInputForm(instance=city_instance)
     formset = ModelFormSet(queryset=city_var_list, prefix="var")
     vardefformset = VarDefFormSet(queryset=city_var_def_list, prefix="vardef")
     comment_list = comments_fields.objects.all()
     comment_formset=CommentFormSet(queryset=comment_list, prefix='comment')
-    return render_to_response('city_var.html', {'formset':formset, 'comment_formset':comment_formset, 'sector_list':sector_list, 'vardefformset':vardefformset, 'city_var_list':city_var_list, 'city':city_instance, 'city':city_instance, }, RequestContext(request))
+    return render_to_response('city_var.html', {'formset':formset, 'city_form':city_form,'comment_formset':comment_formset, 'sector_list':sector_list, 'vardefformset':vardefformset, 'city_var_list':city_var_list, 'city':city_instance, 'city':city_instance, }, RequestContext(request))
 
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def interview_view(request, **kwargs):
     city_id = kwargs.get('city_id');
     city_instance = get_object_or_404(cities, id=city_id) 
@@ -80,6 +102,7 @@ def interview_view(request, **kwargs):
     
     
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def interview_add_view(request, **kwargs):
     city_id = kwargs.get('city_id');
     city_instance = get_object_or_404(cities, id=city_id)
@@ -138,9 +161,13 @@ def interview_add_view(request, **kwargs):
             #save the comment formset
             saveCommentFormset(comment_formset, request, instance)
             
-            #redirect
-            return redirect('/city/' + city_id + '/interview/' + str(instance.id) + '/interviewVar/')
-        
+            
+            if("Save and Continue" in request.POST):
+                #only redirect to the next page, if save and continue was pushed
+                return redirect('/city/' + city_id + '/interview/' + str(instance.id) + '/interviewVar/')
+            else:
+                return redirect('/city/' + city_id + '/interview/add/' + str(instance.id))
+            
         # render page with errors:
         return render_to_response('interview_add.html', {'form': form, 'comment_formset':comment_formset, 'sector_list':sector_list, 'person_list':person_list, 'institution_list':institution_list, 'interview_list':interview_list, 'city':city_instance, 'interview':interview_instance, }, RequestContext(request))
          
@@ -154,6 +181,7 @@ def interview_add_view(request, **kwargs):
     return render_to_response('interview_add.html', {'form': form, 'comment_formset':comment_formset, 'sector_list':sector_list, 'person_list':person_list, 'institution_list':institution_list, 'interview_list':interview_list, 'city':city_instance, 'interview':interview_instance, }, RequestContext(request))
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def interview_var_view(request, **kwargs):
     city_id = kwargs.get('city_id');
     city_instance = get_object_or_404(cities, id=city_id) 
@@ -169,8 +197,9 @@ def interview_var_view(request, **kwargs):
     return render_to_response('interview_var.html', {'interview_var_list':interview_var_list, 'sector_list':sector_list, 'city':city_instance, 'interview':interview_instance, }, RequestContext(request))
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def interview_var_add_view(request, **kwargs):
-    city_id = kwargs.get('city_id');
+    city_id = kwargs.get('city_id'); 
     city_instance = get_object_or_404(cities, id=city_id)
     interview_id = kwargs.get('interview_id')
     interview_instance = get_object_or_404(interviews, id=interview_id)
@@ -213,7 +242,11 @@ def interview_var_add_view(request, **kwargs):
             #save the comment formset
             saveCommentFormset(comment_formset, request, instance)
             
-            return redirect('/city/' + city_id + '/interview/' + interview_id + '/interviewVar/')
+            if("Save and Continue" in request.POST):
+                #only redirect if save and continue was pushed
+                return redirect('/city/' + city_id + '/interview/add/' + interview_id + '/soziomatrix/add/')
+            else:
+                return redirect('/city/' + city_id + '/interview/' + interview_id + '/interviewVar/'+str(instance.id)+"/")
     else:
         form = InterviewVarInputForm(instance=interview_var_instance)  
         comment_list = comments_fields.objects.all()
@@ -222,6 +255,7 @@ def interview_var_add_view(request, **kwargs):
     return render_to_response('interview_var_add.html', {'form': form, 'comment_formset':comment_formset, 'sector_list':sector_list, 'interview_var_list':interview_var_list, 'city':city_instance, 'interview':interview_instance, 'interview_var':interview_var_instance, 'id_var_list':['sector_id', 'best_practice_id', 'factor_id']}, RequestContext(request))
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def soziomatrix_add_view(request, **kwargs):
     city_id = kwargs.get('city_id');
     city_instance = get_object_or_404(cities, id=city_id)
@@ -254,16 +288,17 @@ def soziomatrix_add_view(request, **kwargs):
         if soziomatrixformset.is_valid():
             # custom saveFormset method
             saveSoziomatrixFormset(soziomatrixformset, request, interview_instance)
+            
+            return redirect(request.path)
 
-            return redirect('/city/' + city_id + '/interview/add/' + interview_id + '/soziomatrix/add/')
-        else:
-            return render_to_response('soziomatrix_add.html', {'soziomatrixformset': soziomatrixformset, 'person_list':person_list, 'sector_list':sector_list, 'interview':interview_instance, 'soziomatrix':soziomatrix_instance, 'soziomatrix_list':soziomatrix_list, 'city':city_instance, 'notInEditView':notInEditView, }, RequestContext(request))
-    else:
-        soziomatrixformset = SoziomatrixFormSet(queryset=soziomatrix_list, prefix='soziomatrix')
+        return render_to_response('soziomatrix_add.html', {'soziomatrixformset': soziomatrixformset, 'person_list':person_list, 'sector_list':sector_list, 'interview':interview_instance, 'soziomatrix':soziomatrix_instance, 'soziomatrix_list':soziomatrix_list, 'city':city_instance, 'notInEditView':notInEditView, }, RequestContext(request))
+    
+    soziomatrixformset = SoziomatrixFormSet(queryset=soziomatrix_list, prefix='soziomatrix')
     
     return render_to_response('soziomatrix_add.html', {'soziomatrixformset':soziomatrixformset, 'person_list':person_list, 'sector_list':sector_list, 'city':city_instance, 'interview':interview_instance, 'notInEditView':notInEditView, 'soziomatrix':soziomatrix_instance, 'soziomatrix_list':soziomatrix_list, }, RequestContext(request))
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def bestpractice_view(request, **kwargs):
     city_id = kwargs.get('city_id');
     city_instance = get_object_or_404(cities, id=city_id) 
@@ -273,6 +308,7 @@ def bestpractice_view(request, **kwargs):
     return render_to_response('bestpractice.html', {'bestpractice_list':bestpractice_list, 'sector_list':sector_list, 'city':city_instance, }, RequestContext(request))
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def bestpractice_add_view(request, **kwargs):
     city_id = kwargs.get('city_id');
     city_instance = get_object_or_404(cities, id=city_id)
@@ -325,7 +361,6 @@ def bestpractice_add_view(request, **kwargs):
         
             # if object updated, set update-information
             else:
-                
                 instance.update_by = request.user.get_profile()
                 instance.update_time = datetime.now()
                 sector = ""
@@ -338,7 +373,11 @@ def bestpractice_add_view(request, **kwargs):
             #save the comment formset
             saveCommentFormset(comment_formset, request, instance)
             
-            return redirect('/city/' + city_id + '/bestpractice/add/' + str(instance.id) + '/bestpracticeDescription/')
+            if("Save and Continue" in request.POST):
+                #only redirect if save and continue was pushed
+                return redirect('/city/' + city_id + '/bestpractice/add/' + str(instance.id) + '/bestpracticeDescription/')
+            else:
+                return redirect('/city/' + city_id + '/bestpractice/add/' + str(instance.id))
     else:
         comment_list = comments_fields.objects.all()
         comment_formset=CommentFormSet(queryset=comment_list, prefix='comment')
@@ -348,6 +387,7 @@ def bestpractice_add_view(request, **kwargs):
     return render_to_response('bestpractice_add.html', {'form': form, 'comment_formset':comment_formset, 'sector_list':sector_list, 'bestpractice':bestpractice_instance, 'bestpractice_list':bestpractice_list, 'city':city_instance, 'notInEditView':notInEditView, }, RequestContext(request))
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def bestpractice_description_view(request, **kwargs):
     city_id = kwargs.get('city_id')
     city_instance = get_object_or_404(cities, id=city_id) 
@@ -399,9 +439,12 @@ def bestpractice_description_view(request, **kwargs):
             saveCriteriaDataFormset(criteriadataformset, request, bestpractice_instance)            
             saveCommentFormset(comment_formset, request, "")
 
-            # redirect
-            return redirect('/city/' + city_id + '/bestpractice/add/' + bestpractice_id + '/bestpracticeDetail/')
-
+            if("Save and Continue" in request.POST):
+                #only redirect if save and continue was pushed
+                return redirect('/city/' + city_id + '/bestpractice/add/' + bestpractice_id + '/bestpracticeDetail/')
+            else:
+                return redirect(request.path)
+            
         # render page with errors:
         return render_to_response('bestpractice_description.html', {'varformset':varformset, 'comment_formset':comment_formset, 'sector_list':sector_list, 'vardefformset':vardefformset, 'milestoneformset':milestoneformset, 'criteriaformset':criteriaformset, 'criteriadataformset':criteriadataformset, 'bp_var_list':bp_var_list, 'city':city_instance, 'bestpractice':bestpractice_instance, }, RequestContext(request))
             
@@ -416,6 +459,7 @@ def bestpractice_description_view(request, **kwargs):
     return render_to_response('bestpractice_description.html', {'varformset':varformset, 'comment_formset':comment_formset, 'sector_list':sector_list, 'vardefformset':vardefformset, 'milestoneformset':milestoneformset, 'criteriaformset':criteriaformset, 'criteriadataformset':criteriadataformset, 'bp_var_list':bp_var_list, 'city':city_instance, 'bestpractice':bestpractice_instance, }, RequestContext(request))
     
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def bestpractice_detail_view(request, **kwargs):
     city_id = kwargs.get('city_id')
     city_instance = get_object_or_404(cities, id=city_id) 
@@ -456,8 +500,11 @@ def bestpractice_detail_view(request, **kwargs):
             #save the comment formset
             saveCommentFormset(comment_formset, request, "") 
             
-            # redirect to next page
-            return redirect('/city/' + city_id + '/bestpractice/add/' + bestpractice_id + '/bestpracticeImpact/')
+            if("Save and Continue" in request.POST):
+                #only redirect if save and continue was pushed
+                return redirect('/city/' + city_id + '/bestpractice/add/' + bestpractice_id + '/bestpracticeImpact/')
+            else:
+                return redirect(request.path)
         
         # render page with errors:
         return render_to_response('bestpractice_detail.html', {'varformset':varformset, 'comment_formset':comment_formset, 'sector_list':sector_list, 'actor_list':actor_list, 'vardefformset':vardefformset, 'actorformset':actorformset, 'bp_var_list':bp_var_list, 'city':city_instance, 'bestpractice':bestpractice_instance, }, RequestContext(request))
@@ -472,6 +519,7 @@ def bestpractice_detail_view(request, **kwargs):
     return render_to_response('bestpractice_detail.html', {'varformset':varformset, 'comment_formset':comment_formset, 'sector_list':sector_list, 'actor_list':actor_list, 'vardefformset':vardefformset, 'actorformset':actorformset, 'bp_var_list':bp_var_list, 'city':city_instance, 'bestpractice':bestpractice_instance, }, RequestContext(request))
         
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def bestpractice_impact_view(request, **kwargs):
     city_id = kwargs.get('city_id')
     city_instance = get_object_or_404(cities, id=city_id) 
@@ -507,8 +555,12 @@ def bestpractice_impact_view(request, **kwargs):
             
             #save the comment formset
             saveCommentFormset(comment_formset, request, "") 
-             
-            return redirect('/city/' + city_id + '/bestpractice/add/' + bestpractice_id + '/bestpracticeImpact/')
+            
+            if("Save and Continue" in request.POST):
+                #only redirect if save and continue was pushed
+                return redirect('/city/' + city_id + '/bestpractice/add/' + bestpractice_id + '/impactfactor/')
+            else:
+                return redirect(request.path)
         # render page with errors:
         return render_to_response('bestpractice_impact.html', {'varformset':varformset, 'comment_formset':comment_formset, 'sector_list':sector_list, 'vardefformset':vardefformset, 'bp_var_list':bp_var_list, 'city':city_instance, 'bestpractice':bestpractice_instance, }, RequestContext(request))
     
@@ -520,6 +572,7 @@ def bestpractice_impact_view(request, **kwargs):
     return render_to_response('bestpractice_impact.html', {'varformset':varformset, 'comment_formset':comment_formset, 'sector_list':sector_list, 'vardefformset':vardefformset, 'bp_var_list':bp_var_list, 'city':city_instance, 'bestpractice':bestpractice_instance, }, RequestContext(request))
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def impactfactor_view(request, **kwargs):
     city_id = kwargs.get('city_id');
     city_instance = get_object_or_404(cities, id=city_id) 
@@ -567,6 +620,7 @@ def impactfactor_view(request, **kwargs):
     return render_to_response('impactfactor.html', {'impactfactor_list':impactfactor_list, 'all_impactfactors_with_impact':all_impactfactors_with_impact, 'allother_impactfactors_list':allother_impactfactors_list, 'sector_list':sector_list, 'city_list':city_list, 'city':city_instance, 'bestpractice':bestpractice_instance, }, RequestContext(request))
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def impactfactor_add_view(request, **kwargs):
     city_id = kwargs.get('city_id')
     city_instance = get_object_or_404(cities, id=city_id)
@@ -612,7 +666,12 @@ def impactfactor_add_view(request, **kwargs):
             
             #save the comment formset
             saveCommentFormset(comment_formset, request, instance)
-            return redirect('/city/' + city_id + '/bestpractice/add/' + bestpractice_id + '/impactfactor/add/' + str(instance.id) + '/info/')
+            
+            if("Save and Continue" in request.POST):
+                #only redirect if save and continue was pushed
+                return redirect('/city/' + city_id + '/bestpractice/add/' + bestpractice_id + '/impactfactor/add/' + str(instance.id) + '/info/')
+            else:
+                return redirect('/city/' + city_id + '/bestpractice/add/' + bestpractice_id + '/impactfactor/add/' + str(instance.id))
         
         if category_form.is_valid():
             instance = category_form.save(commit=False)
@@ -635,6 +694,7 @@ def impactfactor_add_view(request, **kwargs):
     return render_to_response('impactfactor_add.html', {'form': form, 'comment_formset':comment_formset, 'category_form':category_form, 'sector_list':sector_list, 'impactfactor':impactfactor_instance, 'impactfactor_list':impactfactor_list, 'city':city_instance, 'notInEditView':notInEditView, 'bestpractice':bestpractice_instance, }, RequestContext(request))
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def impactfactor_info_view(request, **kwargs):
     city_id = kwargs.get('city_id')
     city_instance = get_object_or_404(cities, id=city_id) 
@@ -689,8 +749,6 @@ def impactfactor_info_view(request, **kwargs):
         sectformset = SectorFormSet(request.POST, prefix='sector')
         comment_formset = CommentFormSet(request.POST, prefix="comment")
         
-        print comment_formset.errors
-        
         if varformset.is_valid() and vardefformset.is_valid() and bpformset.is_valid() and relformset.is_valid() and sectformset.is_valid() and comment_formset.is_valid():
             # custom saveFormset method
             saveIfVarFormset(varformset, request, impactfactor_instance)
@@ -701,7 +759,8 @@ def impactfactor_info_view(request, **kwargs):
             #save the comment formset
             saveCommentFormset(comment_formset, request, "") 
             
-            return redirect('/city/' + city_id + '/bestpractice/add/' + bestpractice_id + '/impactfactor/add/' + str(impactfactor_id) + '/info/')
+            return redirect(request.path)
+
         return render_to_response('impactfactor_info.html', {'varformset':varformset, 'comment_formset':comment_formset, 'sector_list':sector_list, 'vardefformset':vardefformset, 'bpformset':bpformset, 'relformset':relformset, 'sectformset':sectformset, 'x_fact_list':x_fact_list, 'impactfactor_var_list':impactfactor_var_list, 'city':city_instance, 'bestpractice':bestpractice_instance, 'impactfactor':impactfactor_instance, }, RequestContext(request))
     
     sectformset = SectorFormSet(queryset=x_fact_sect_list, prefix='sector')
@@ -715,6 +774,7 @@ def impactfactor_info_view(request, **kwargs):
     return render_to_response('impactfactor_info.html', {'varformset':varformset, 'comment_formset':comment_formset, 'sector_list':sector_list, 'vardefformset':vardefformset, 'bpformset':bpformset, 'relformset':relformset, 'sectformset':sectformset, 'x_fact_list':x_fact_list, 'impactfactor_var_list':impactfactor_var_list, 'city':city_instance, 'bestpractice':bestpractice_instance, 'impactfactor':impactfactor_instance, }, RequestContext(request))
 
 @login_required
+#@user_passes_test(isAuthor, login_url="/accounts/permissionDenied/")
 def sector_add_view(request, **kwargs):
     city_id = kwargs.get('city_id')
     city_instance = get_object_or_404(cities, id=city_id)
@@ -750,7 +810,7 @@ def sector_add_view(request, **kwargs):
             #save the comment formset
             saveCommentFormset(comment_formset, request, "")
              
-            return redirect('/city/' + city_id + '/sector/' + sector_id + '/')
+            return redirect(request.path)
         
         return render_to_response('sector_add.html', {'formset':formset, 'comment_formset':comment_formset, 'sector_list':sector_list, 'vardefformset':vardefformset, 'sector_var_list':sector_var_list, 'city':city_instance, 'sector':sector_instance, }, RequestContext(request))
    
@@ -788,11 +848,85 @@ def password_view(request):
 
     return render_to_response('registration/change_password.html', {'pForm':pForm, 'error':error, 'success':success, }, RequestContext(request))
 
+def login_view(request):
+    #if login-form was submitted
+    if request.method == 'POST':
+        #get username, password
+        username = request.POST['username']
+        password = request.POST['password']
+        #authenticate user before logging him in - necessary!
+        user = authenticate(username=username, password=password)
+        
+        if user is not None:
+            if user.is_active:
+                #log the user in
+                login(request, user)
+                
+                #redirect to next if it is contained in url
+                if 'next' in request.GET:
+                    next = request.GET['next']
+                    return HttpResponseRedirect(next)
+                #else, redirect to home
+                else:
+                    return HttpResponseRedirect("/")
+            else:
+                #account is disabled, return error page
+                return render_to_response('registration/login.html', {'request': request, 'error_msg':'Your account is disabled. Contact us for further information.'}, RequestContext(request))
+        else:
+            # Return an 'invalid login' error message.
+            return render_to_response('registration/login.html', {'request': request, 'error_msg':'The username or password was wrong.'}, RequestContext(request))
+    
+    #render blank login page        
+    return render_to_response('registration/login.html', {'request': request, }, RequestContext(request))
+
+
 def logout_view(request):
     auth.logout(request)
     # Redirect to a success page.
     return render_to_response('registration/logout.html', {'request': request, }, RequestContext(request))
 
+"""@login_required
+def partner_view(request):
+    #get all city stuff
+    city_list = cities.objects.all()
+    city_var_list = city_vars.objects.all()
+
+    #get all bestpractice stuff
+    bp_list = best_practices.objects.all()
+    bp_var_list = bp_vars.objects.all()
+    bp_actor_list = bp_actors.objects.all()
+    bp_milestones_list = bp_milestones.objects.all()
+    bp_criteria_list = bp_criteria.objects.all()
+    bp_criteria_data_list = bp_criteria_data.objects.all()
+    
+    #get all sector stuff
+    sector_list = sectors.objects.all()
+    sector_var_list = sector_vars.objects.all()
+    
+    #get all impact factor stuff
+    if_list = impact_factors.objects.all()
+    if_vars_list = impact_factor_vars.objects.all()
+    if_categories_list = impact_factor_categories.objects.all()
+    
+    #get all interview stuff
+    interview_list = interviews.objects.all()
+    interview_var_list = interview_vars.objects.all()
+    soziomatrix_list = soziomatrix.objects.all()
+    
+    #get all cross tables
+    x_fact_bp_list = x_fact_bp.objects.all()
+    x_fact_fact_list = x_fact_fact.objects.all()
+    x_fact_sect_list = x_fact_sect.objects.all()
+    
+    #get all comments
+    comments_list = comments_fields.objects.all()
+
+    return render_to_response('partner.html', {'city_list':city_list, 'city_var_list':city_var_list, 'bp_list':bp_list, 'bp_var_list':bp_var_list, 'bp_actor_list':bp_actor_list, 'bp_milestones_list':bp_milestones_list, 'bp_criteria_list':bp_criteria_list, 'bp_criteria_data_list':bp_criteria_data_list, 'sector_list':sector_list, 'sector_var_list':sector_var_list, 'if_list':if_list, 'if_vars_list':if_vars_list, 'if_categories_list':if_categories_list, 'interview_list':interview_list, 'interview_var_list':interview_var_list, 'soziomatrix_list':soziomatrix_list, 'x_fact_bp_list':x_fact_bp_list, 'x_fact_fact_list':x_fact_fact_list, 'x_fact_sect_list':x_fact_sect_list, 'comments_list':comments_list, }, RequestContext(request))
+
+@login_required
+def permissionDenied_view(request):
+    return render_to_response('permissionDenied.html', RequestContext(request))
+"""
 def getPersonList():
     person_list = []
     #add all persons from interviews to person_list
