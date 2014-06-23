@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.10627.png)](http://dx.doi.org/10.5281/zenodo.10627)
+
 # morgenstadtDB #
 
 morgenstadtDB is the database that is used in the Fraunhofer research project Morgenstadt.
