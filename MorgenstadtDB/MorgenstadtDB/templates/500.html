@@ -1,0 +1,18 @@
+{% extends "base_form_template.html" %}
+
+{% block title %}m:ci Error{% endblock %}
+
+{% block brand %}<a class="brand" href="{% url home %}">m:ci</a>{% endblock %}
+
+{% block navbar %}				
+	<li><a href="{% url password_view %}">Password</a></li>
+	<li><a href="{% url logout_view %}">Logout</a></li>
+{% endblock %}
+
+{% block content %}
+	<br />
+	<h1>Error on page</h1>
+	<hr />
+	<p>We encountered an error on the page. We'll try to fix it as soon as possible, please check back later.</p>
+	<p>If the error keeps appearing, please send us an <a href="mailto:tobias.hauck@iao.fraunhofer.de">Email</a> with detailed information of the last few steps you did, before the error occured.</p>
+{% endblock %}

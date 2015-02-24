@@ -1,0 +1,128 @@
+{% extends "formular_base_template.html" %}
+{% load custom_filters %}
+
+{%block shortInfos %}
+	<h1>Sector {{ sector.sector_name }} in {{ city.city_name }}</h1>
+    
+	<strong>Sector Description:</strong> {{ sector.sector_desc}}<br/>
+		
+	<hr />
+{% endblock %}
+
+{% block formular %}
+	<h1>Sector Variables</h1>
+	<br />
+
+  	<form enctype="multipart/form-data" action="" method="post">{% csrf_token %} 
+  		{{ formset.management_form }}
+  		{{ vardefformset.management_form }}
+  		{{ comment_formset.management_form }}
+  		
+  		<div style="display:none">
+			{% for form in comment_formset %}
+				{{ form.id }}
+			{% endfor %}
+		</div>
+  		
+		{% if formset.errors or vardefformset.errors %}
+			<p class="text-error">Please correct the Errors below!</p>	
+		{% endif %}
+		
+		<div class="fields">
+			<fieldset>
+				{% for form in formset %}
+					{% for field in form.hidden_fields %}
+						{{ field }}
+					{% endfor %}
+	
+				    {% for field in form.visible_fields %}
+						{% if field.errors %}
+							<div class="control-group error">
+							<label class="control-label" for="{{ field.name }}">{{ field.name }}</label>
+								<div class="controls">
+									{{ field }}
+									<span class="help-inline">{{ field.errors.0 }}</span>
+								</div>
+							</div>
+						{% else %}
+					    	{% if field.field|klass == "BooleanField" %}
+						   		<label class="checkbox">
+									{{ field.label }}
+									{{ field }}
+								</label>
+								
+								<span class="help-inline">
+									<div class="tooltipClass">
+										<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+									</div>
+								</span>
+							{% else %}
+								<div class="control-group">
+									{% if field.is_hidden %}
+									{% else %}
+										<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+									{% endif %}							    
+									<div class="controls">
+								   		{% if field.field.widget|klass == "CheckboxSelectMultiple" %}
+							    			<label class="checkbox">
+								   				{{ field }}
+											</label>
+							    		{% else %}
+											{{ field }}
+							    		{% endif %}
+							    		<span class="help-inline">
+											<div class="tooltipClass">
+												<a href="#" data-toggle="tooltip" title="{% if field.help_text %}{{ field.help_text }}{% else %}No description available.{% endif %}"><i class="icon-question-sign"></i></a>
+												<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+											</div>
+										</span>
+							    	</div>
+									</div>
+								{% endif %}
+							{% endif %}
+							<!-- comment section -->
+						    <div id="collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" class="collapse">
+								{% for comment_form in comment_formset %}
+									{% if comment_form.instance.table_id == form.instance.id or comment_form.instance.table_id == -1 %}
+										{% if comment_form.instance.table_field == field.name and comment_form.instance.table_name == form.instance|to_class_name %}
+											<!-- if the field belongs to the form -->
+											<!-- draw the comment-form -->
+											{% for field in comment_form.hidden_fields %}
+												{{ field }}
+											{% endfor %}
+											
+											{% for field in comment_form.visible_fields %}
+												<div class="control-group">
+													{% if field.is_hidden %}
+													{% else %}
+														<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+													{% endif %}							    
+													<div class="controls">
+														{{ field }}
+													</div>
+												</div>
+											{% endfor %}
+											<!-- end of drawing -->
+										{% endif %}
+									{% endif %}
+								{% endfor %}
+							</div>
+						{% endfor %}
+						
+					{% endfor %}
+				</fieldset>
+				
+			<!-- new var_def fields will be added to this div -->
+			<div id="addVarDef1">
+			</div>
+
+			<!-- add-button -->
+			<div class="add1">
+	   			<input type="button" class="btn" onClick="newVarDef('1');" name="addVar1" value="+" />
+			</div>
+		</div>
+		
+		<hr />
+		
+   		<input class="btn btn-primary" type="submit" onClick="submitFormOkay=true;" value="Save" />
+{% endblock %}

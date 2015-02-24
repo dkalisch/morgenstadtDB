@@ -1,0 +1,151 @@
+{% extends "formular_base_template.html" %}
+{% load custom_filters %}
+
+{% block title %}Add Interview{% endblock %}
+
+{% block navigation %}
+	<ul class="breadcrumb">
+		{% if interview.id %}
+			<li class="active">Interview with: {{ interview.person }}<span class="divider">/</span></li>
+			<li><a href ="{% url interview_var city_id=city.id interview_id=interview.id %}">Variables</a><span class="divider">/</span></li>
+			<li><a href ="{% url soziomatrix_add city_id=city.id interview_id=interview.id %}">Soziomatrix</a>
+		{% else %}
+			<li class="active">New Interview</li>
+		{% endif %}
+	</ul>
+{% endblock %}
+
+			
+{% block formular %}
+	
+	 
+	<h1>Interview</h1>
+	
+	<form enctype="multipart/form-data" action="" method="post">{% csrf_token %} 
+		{{ comment_formset.management_form }}
+		
+		<div style="display:none">
+			{% for form in comment_formset %}
+				{{ form.id }}
+			{% endfor %}
+		</div>
+		
+		{% if form.errors %}
+			<p class="text-error">Please correct the Errors below!</p>	
+		{% endif %}
+		
+		<div class="fields">
+			<fieldset>
+				{% for field in form.hidden_fields %}
+					{{ field }}
+				{% endfor %}
+				
+				{% for field in form.visible_fields %}
+					{% if field.errors %}
+						<div class="control-group error">
+						<label class="control-label" for="{{ field.name }}">{{ field.name }}</label>
+							<div class="controls">
+								{{ field }}
+								<span class="help-inline">{{ field.errors.0 }}</span>
+							</div>
+						</div>
+					{% else %}
+				    	{% if field.field|klass == "BooleanField" %}
+					   		<label class="checkbox">
+								{{ field.label }}
+								{{ field }}
+							</label>
+							
+				    		<span class="help-inline">
+								<div class="tooltipClass">
+									<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+								</div>
+							</span>
+						{% else %}
+							<div class="control-group">
+								{% if field.is_hidden %}
+								{% else %}
+									<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+								{% endif %}							    
+								<div class="controls">
+							   		{% if field.field.widget|klass == "CheckboxSelectMultiple" %}
+						    			<label class="checkbox">
+							   				{{ field }}
+										</label>
+						    		{% else %}
+										{{ field }}
+						    		{% endif %}
+						    		<span class="help-inline">
+										<div class="tooltipClass">
+											<a href="#" rel="popover" data-toggle="tooltip" title="Add a comment or source"><i class="icon-chevron-down" data-toggle="collapse" data-target="#collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" onClick='commentButtonPressed(this, "{{field.name}}", "{{form.instance.id}}", "{{ form.instance|to_class_name}}");'></i></a>
+										</div>
+									</span>
+						    	</div>
+							</div>
+						{% endif %}
+					{% endif %}
+					
+					
+					<!-- comment section -->
+				    <div id="collapse_{{form.instance.id}}_{{field.name}}_{{form.instance|to_class_name}}" class="collapse">
+						{% for comment_form in comment_formset %}
+							{% if comment_form.instance.table_id == form.instance.id or comment_form.instance.table_id == -1 %}
+								{% if comment_form.instance.table_field == field.name and comment_form.instance.table_name == form.instance|to_class_name %}
+									<!-- if the field belongs to the form -->
+									<!-- draw the comment-form -->
+									{% for field in comment_form.hidden_fields %}
+										{{ field }}
+									{% endfor %}
+									
+									{% for field in comment_form.visible_fields %}
+										<div class="control-group">
+											{% if field.is_hidden %}
+											{% else %}
+												<label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+											{% endif %}							    
+											<div class="controls">
+												{{ field }}
+											</div>
+										</div>
+									{% endfor %}
+									<!-- end of drawing -->
+								{% endif %}
+							{% endif %}
+						{% endfor %}
+					</div>
+				{% endfor %}
+			</fieldset>
+		</div>
+		
+  		<hr />
+	    
+	    <input name="Save and Continue" class="btn btn-primary" type="submit" onClick="submitFormOkay=true;" value="Save and Continue" />
+		<input class="btn" type="submit" onClick="submitFormOkay=true;" value="Save" />
+		
+		<script>
+		    //call Typeahead-Script:
+			addTypeaheadSource();
+		    	
+		   	function addTypeaheadSource(){
+		    	//create new array with length of the person_list
+		   		person_array = new Array({{ person_list|length }});
+		    	//create new array with length of the institution_list
+		    	institution_array = new Array ({{ institution_list|length }});
+		    	
+		    	//add all persons to the person_array
+		    	{% for p in person_list %}
+		   			person_array[{{ forloop.counter0 }}] = "{{ p }}";
+				{% endfor %}
+
+				//add all institutions to the person_array
+		    	{% for i in institution_list %}
+		   			institution_array[{{ forloop.counter0 }}] = "{{ i }}";
+				{% endfor %}
+	
+				//choose the person_array as source for typeahead
+		    	$('.person_typeahead').typeahead({source: person_array});
+		    	$('.institution_typeahead').typeahead({source: institution_array});  
+		    }
+		</script>
+
+{% endblock %}

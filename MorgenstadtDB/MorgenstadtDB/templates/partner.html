@@ -1,0 +1,143 @@
+{% extends "base_form_template.html" %}
+{% load custom_filters %}
+
+{% block title %}m:ci Partner{% endblock %}
+
+{% block brand %}<a class="brand" href="{% url home %}">m:ci</a>{% endblock %}
+
+{% block navbar %}				
+	<li><a href="{% url password_view %}">Password</a></li>
+	<li><a href="{% url logout_view %}">Logout</a></li>
+{% endblock %}
+
+{% block content %}
+	<br />
+	<h1>Choose what to display</h1>
+	<hr />
+    <label>Select City</label>
+    <select id = "cityDropdown">
+    	{% for city in city_list %}
+		    <option value = "{{ city.city_name }}">{{ city.city_name }}</option>
+	    {% endfor %}
+    </select>
+    
+    <br />
+
+	<button class="btn btn-primary" onClick="displayInformation()">Display</button>
+
+	{% for bp in bp_list %}
+		<div id="information">
+			<div class="general">
+				<h2>{{ bp.bp_name }}</h2>
+				{% if bp.planning_phase %}
+					The Best Practice is in the planning phase.
+				{% endif %}
+				
+				<br />
+				<br />
+	
+				<strong>City:</strong>
+				<br />
+				<p>{{ bp.city_id.city_name }}</p>
+			
+				<strong>Sectors:</strong>
+				<br />
+				<p>
+					|
+					{% for sect in sector_list %}
+						{% if bp.sectors|contains:sect.get_id_as_string %}
+							{{ sect.sector_name }} |
+						{% endif %}
+					{% endfor %}
+				</p>
+	
+				{% if bp.idea_date %}
+					<strong>Idea Date:</strong>
+					<p>{{ bp.idea_date }}</p>
+				{% endif %}
+	
+				{% if bp.start_date %}
+					<strong>Start Date:</strong>
+					<p>{{ bp.start_date }}</p>
+				{% endif %}
+				
+				{% if bp.bp_desc %}
+					<strong>Description:</strong>
+					<br />
+					<p>{{ bp.bp_desc }}</p>
+				{% endif %}
+			</div>			
+			
+			<br />
+			
+			<div class="variables">
+				<h3>Variables</h3>
+			
+				{% for bp_var in bp_var_list %}
+					{% if bp_var.best_practice_id == bp %}
+						<strong>{{ bp_var.bp_vars_def_id.var_name }}:</strong>
+						<p>{{ bp_var.value }}{{ bp_var.file }}</p>
+					{% endif %}
+				{% endfor %}
+				<br />			
+	
+				<div class="actors">
+					<h4>Actors</h4>
+					
+					<p>
+					
+						{% for bp_actor in bp_actor_list %}
+							{% if bp_actor.best_practice_id == bp %}
+								{{ bp_actor.actor_name }} ({{ bp_actor.CLASSIFICATION_CHOICES|get_value_from_dict:bp_actor.classification }}), 
+							{% endif %}
+						{% endfor %}
+					</p>
+				</div>
+				
+				<br />
+				
+				<div class="milestones">
+					<h4>Milestones</h4>
+					
+					{% for bp_milestone in bp_milestones_list %}
+						{% if bp_milestone.best_practice_id == bp %}
+							<strong>{{ bp_milestone.milestone_date }}</strong>						
+							<p>{{ bp_milestone.milestone_desc }}</p>
+						{% endif %}						
+					{% endfor %}
+				</div>
+				
+				<br />
+
+				<div class="criteria">
+					<h4>Criteria</h4>
+					{% for bp_criteria in bp_criteria_list %}
+						{% if bp_criteria.best_practice_id == bp %}
+							<strong>{{ bp_criteria.bp_criteria_name }} (in {{ bp_criteria.unit }})</strong>						
+							<p>{{ bp_criteria.value_source }}</p>
+
+							<p>
+								{% for bp_criteria_data in bp_criteria_data_list %}
+									{% if bp_criteria_data.bp_criteria_id == bp_criteria %}
+										{{ bp_criteria_data.criteria_date }}: {{ bp_criteria_data.criteria_value }}
+										<br />
+									{% endif %}							
+								{% endfor %}							
+							</p>
+						{% endif %}						
+					{% endfor %}
+					
+					
+				</div>
+			</div>
+		</div>	
+	{% endfor %}
+	
+	
+	<script>
+		function displayInformation(){
+			var selectedCity = $("#cityDropdown").val();
+			
+		}
+	</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "overview_base_template.html" %}
+
+{% block shortInfoHeader %}
+	<h1>{{ city.city_name }}</h1>
+{% endblock %}
+
+{% block shortInfoPic %}
+	<img src="{{ STATIC_URL }}{{ city.city_name }}.jpg" />
+{% endblock %}
+
+{% block shortInfoEdit %}
+	<a class="btn btn-primary" href="{% url city_var city_id=city.id %}">Edit {{ city.city_name }}</a>
+{% endblock %}
+
+{% block listing %}
+	<div class="row-fluid">
+		<div class="span4">
+			<h4>Sectors</h4>
+			
+			<p>
+				{% for sector in sector_list %}
+					<a href="{% url sector_add city_id=city.id sector_id=sector.id %}">{{ sector.sector_name }}</a><br />
+				{% endfor %}  
+			</p>
+		</div>
+		
+		
+		<div class="span4">
+			<h4>Best Practices</h4>
+			
+			<p>
+				{% for bestpractice in bestpractice_list %}
+					<a href="{% url bestpractice_add city_id=city.id bestpractice_id=bestpractice.id %}">{{ bestpractice.bp_name }}</a><br />
+				{% endfor %}  
+			
+				<a class="btn" href="{% url bestpractice_add city_id=city.id %}">Add Best Practice</a>
+			</p>
+		</div>
+
+
+		<div class="span4">
+			<h4>
+				Interviews
+			</h4>
+			
+			<p>
+				{% for interview in interview_list %}
+					<a href="{% url interview_add city_id=city.id interview_id=interview.id %}">Interview with {{ interview.person }}</a><br/>
+				{% endfor %}  
+
+				<a class="btn" href="{% url interview_add city_id=city.id %}">Add Interview</a>
+			</p>
+		</div>
+	</div>
+{% endblock %}
